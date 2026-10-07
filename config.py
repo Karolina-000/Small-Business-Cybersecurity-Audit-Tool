@@ -61,10 +61,7 @@ WINDOWS_EVENT_IDS = {
 # ფაილების მთლიანობის (SHA-256) პარამეტრები
 # ---------------------------------------------------------------
 FILE_INTEGRITY_TARGETS = [
-    r"C:\Users\gstore\OneDrive\Desktop\Small Business Cybersecurity Audit Tool\test_file.txt"
-
-    # დაამატეთ დაცული ფაილების/საქაღალდეების რეალური გზები
-    # მაგ: "C:\\Windows\\System32\\drivers\\etc\\hosts",
+    "./test_file.txt"
 ]
 BASELINE_HASH_FILE = os.path.join(BASE_DIR, "baseline_hashes.json")
 

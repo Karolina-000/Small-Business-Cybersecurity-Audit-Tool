@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+reports/
+audit_report_*.html
+baseline_hashes.json
+test_file.txt
+.vscode/
+.venv/

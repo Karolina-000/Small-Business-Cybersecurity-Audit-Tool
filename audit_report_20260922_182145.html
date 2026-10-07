@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<title>კიბერუსაფრთხოების აუდიტის ანგარიში — Example Small Business LLC</title>
+<style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background:#f4f6f8; color:#1f2937; margin:0; padding:0; }
+    .container { max-width: 900px; margin: 0 auto; padding: 32px 24px 64px; }
+    header { background:#111827; color:#fff; padding:32px 24px; }
+    header h1 { margin:0 0 8px; font-size:24px; }
+    header p { margin:2px 0; color:#9ca3af; font-size:14px; }
+    .summary { display:flex; gap:16px; margin:24px 0; flex-wrap:wrap; }
+    .summary-card { flex:1; min-width:140px; background:#fff; border-radius:10px; padding:16px 20px; box-shadow:0 1px 3px rgba(0,0,0,.08); text-align:center; }
+    .summary-card .num { font-size:28px; font-weight:700; }
+    .summary-card .label { font-size:13px; color:#6b7280; margin-top:4px; }
+    .verdict { background:#fff; border-left:5px solid #2563eb; border-radius:6px; padding:16px 20px; margin-bottom:24px; font-size:15px; }
+    .category { background:#fff; border-radius:10px; padding:20px 24px; margin-bottom:20px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+    .category h2 { margin-top:0; font-size:18px; border-bottom:1px solid #e5e7eb; padding-bottom:10px; }
+    .count { color:#9ca3af; font-weight:400; font-size:14px; }
+    .finding { padding:14px 0; border-bottom:1px solid #f3f4f6; }
+    .finding:last-child { border-bottom:none; }
+    .finding-header { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+    .badge { color:#fff; font-size:12px; font-weight:600; padding:3px 10px; border-radius:12px; }
+    .finding-title { font-weight:600; }
+    .finding-desc { margin:4px 0; color:#374151; font-size:14px; }
+    .finding-rec { margin:4px 0; font-size:14px; color:#1f2937; background:#f0f9ff; padding:8px 12px; border-radius:6px; }
+    .finding-evidence { font-size:12px; color:#9ca3af; font-family:monospace; }
+    .muted { color:#9ca3af; font-style:italic; }
+    footer { text-align:center; color:#9ca3af; font-size:12px; margin-top:40px; }
+</style>
+</head>
+<body>
+<header>
+    <h1>🛡️ კიბერუსაფრთხოების საბაზისო აუდიტი</h1>
+    <p><strong>კომპანია:</strong> Example Small Business LLC</p>
+    <p><strong>თარიღი:</strong> 2026-09-22 18:21:45</p>
+</header>
+<div class="container">
+
+    <div class="summary">
+        <div class="summary-card"><div class="num">4</div><div class="label">სულ ნაპოვნი</div></div>
+        <div class="summary-card"><div class="num" style="color:#dc2626">2</div><div class="label">High</div></div>
+        <div class="summary-card"><div class="num" style="color:#d97706">2</div><div class="label">Medium</div></div>
+        <div class="summary-card"><div class="num" style="color:#16a34a">0</div><div class="label">Low</div></div>
+        <div class="summary-card"><div class="num">16</div><div class="label">რისკის ქულა</div></div>
+    </div>
+
+    <div class="verdict">
+        <strong>საბოლოო შეფასება:</strong> კრიტიკული — საჭიროებს დაუყოვნებელ ჩარევას
+    </div>
+
+    
+        <section class="category">
+            <h2>Windows Logs <span class="count">(2)</span></h2>
+            
+        <div class="finding">
+            <div class="finding-header">
+                <span class="badge" style="background:#dc2626">High</span>
+                <span class="finding-title">[DEMO] შესაძლო Brute-Force შეტევა — 203.0.113.45</span>
+            </div>
+            <p class="finding-desc">7 წარუმატებელი შესვლის მცდელობა 10 წუთში (სადემონსტრაციო მონაცემი).</p>
+            <p class="finding-rec"><strong>რეკომენდაცია:</strong> დაბლოკეთ წყარო IP, ჩართეთ MFA და account lockout policy.</p>
+            <p class='finding-evidence'>Evidence: DEMO MODE — გაშვებულია არა-Windows გარემოში</p>
+        </div>
+
+        <div class="finding">
+            <div class="finding-header">
+                <span class="badge" style="background:#d97706">Medium</span>
+                <span class="finding-title">[DEMO] Event ID 4720: ახალი მომხმარებლის ანგარიში შეიქმნა</span>
+            </div>
+            <p class="finding-desc">დაფიქსირდა 2026-09-22 18:21:45 (სადემონსტრაციო მონაცემი).</p>
+            <p class="finding-rec"><strong>რეკომენდაცია:</strong> გადაამოწმეთ, ავტორიზებული ადმინისტრატორის მიერ შეიქმნა თუ არა.</p>
+            <p class='finding-evidence'>Evidence: DEMO MODE</p>
+        </div>
+        </section>
+
+        <section class="category">
+            <h2>Network <span class="count">(1)</span></h2>
+            
+        <div class="finding">
+            <div class="finding-header">
+                <span class="badge" style="background:#dc2626">High</span>
+                <span class="finding-title">ღია პორტი 445/tcp ჰოსტზე 192.168.1.10</span>
+            </div>
+            <p class="finding-desc">SMB სერვისი ხელმისაწვდომია გარედან.</p>
+            <p class="finding-rec"><strong>რეკომენდაცია:</strong> დახურეთ პორტი ან შეზღუდეთ firewall-ით.</p>
+            <p class='finding-evidence'>Evidence: host=192.168.1.10, port=445/tcp</p>
+        </div>
+        </section>
+
+        <section class="category">
+            <h2>Website <span class="count">(1)</span></h2>
+            
+        <div class="finding">
+            <div class="finding-header">
+                <span class="badge" style="background:#d97706">Medium</span>
+                <span class="finding-title">აკლია Security Header: Content-Security-Policy</span>
+            </div>
+            <p class="finding-desc">საიტს არ აქვს CSP header.</p>
+            <p class="finding-rec"><strong>რეკომენდაცია:</strong> დაამატეთ CSP header web სერვერის კონფიგურაციაში.</p>
+            
+        </div>
+        </section>
+
+    <footer>ანგარიში გენერირებულია ავტომატურად Small Business Cybersecurity Audit Tool-ის მიერ.</footer>
+</div>
+</body>
+</html>

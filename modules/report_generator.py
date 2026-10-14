@@ -17,8 +17,6 @@ from html import escape
 
 import config
 
-REPORTS_DIR = "reports"
-
 # სიმძიმე: (ფერი, ეტიკეტი, რიგითობა, მნიშვნელობა უბრალო ენით)
 SEVERITY = {
     "High":   ("#f08a5d", "მნიშვნელოვანი", 0, "რეალური რისკია, ღირს სწრაფად გამოსწორება"),
@@ -27,16 +25,20 @@ SEVERITY = {
 }
 ORDER = ("High", "Medium", "Low")
 
+# ახსნები პორტის ნომრის მიხედვით (ტექსტში ძებნა არასწორად ემთხვეოდა IP-ებს, მაგ. 192.168.1.135)
+PORT_EXPLANATIONS = {
+    135: "ეს Windows-ის შიდა სერვისია, რომლითაც პროგრამები ერთმანეთს უკავშირდებიან. ჩვეულებრივ ნორმალურია, მთავარია, რომ ინტერნეტიდან ხელმისაწვდომი არ იყოს.",
+    445: "ეს პორტი ფაილების გაზიარებისთვისაა. ინტერნეტიდან ღია რომ იყოს, რისკი იქნებოდა, ხოლო შიდა ქსელში ეს ჩვეულებრივი მდგომარეობაა.",
+    3389: "ეს პორტი კომპიუტერთან დისტანციურ წვდომას იძლევა. თუ ღიაა, უნდა იყოს პაროლითა და დამატებითი დაცვით დაცული.",
+}
+
 # უბრალო ენით ახსნები (გასაღები = სიტყვა სათაურში ან აღწერაში)
 EXPLANATIONS = {
-    "135": "ეს Windows-ის შიდა სერვისია, რომლითაც პროგრამები ერთმანეთს უკავშირდებიან. ჩვეულებრივ ნორმალურია, მთავარია, რომ ინტერნეტიდან ხელმისაწვდომი არ იყოს.",
-    "445": "ეს პორტი ფაილების გაზიარებისთვისაა. ინტერნეტიდან ღია რომ იყოს, რისკი იქნებოდა, ხოლო შიდა ქსელში ეს ჩვეულებრივი მდგომარეობაა.",
     "SMB": "ეს სერვისი ფაილების გაზიარებისთვისაა. შიდა ქსელში ნორმალურია, ინტერნეტიდან კი ღია არ უნდა იყოს.",
-    "3389": "ეს პორტი კომპიუტერთან დისტანციურ წვდომას იძლევა. თუ ღიაა, უნდა იყოს პაროლითა და დამატებითი დაცვით დაცული.",
     "RDP": "დისტანციური წვდომა კომპიუტერზე. კარგად დაცული უნდა იყოს.",
     "Brute": "ვიღაც ბევრჯერ ცდის სხვადასხვა პაროლს სისტემაში შესასვლელად.",
-    "4720": "კომპიუტერზე ახალი მომხმარებელი დაემატა. თუ ეს თქვენ გააკეთეთ, ყველაფერი რიგზეა.",
-    "4625": "სისტემაში შესვლა ვერ მოხერხდა (მაგ. პაროლი შეცდომით შეიყვანეს).",
+    "Event ID 4720": "კომპიუტერზე ახალი მომხმარებელი დაემატა. თუ ეს თქვენ გააკეთეთ, ყველაფერი რიგზეა.",
+    "Event ID 4625": "სისტემაში შესვლა ვერ მოხერხდა (მაგ. პაროლი შეცდომით შეიყვანეს).",
     "Content-Security-Policy": "ეს დაცვა ხელს უშლის საიტზე უცხო კოდის გაშვებას.",
     "Security Header": "ეს საიტის დამატებითი დამცავი პარამეტრია, რომელიც ბრაუზერს ეუბნება, როგორ დაიცვას ვიზიტორი.",
     "HTTPS": "HTTPS იცავს ვიზიტორის მონაცემებს გადაცემისას.",
@@ -45,9 +47,6 @@ EXPLANATIONS = {
     "შეცვლილია": "ფაილი შეიცვალა ბოლო შემოწმების შემდეგ. თუ ცვლილება თქვენ გააკეთეთ, ყველაფერი რიგზეა. თუ არა, ღირს გადამოწმება.",
     "წაიშალა": "ფაილი გაქრა ბოლო შემოწმების შემდეგ.",
 }
-
-LOCAL_NOTE = "ეს თქვენი კომპიუტერის შიდა შემოწმებაა და გარედან არ ჩანს, ამიტომ რისკი დაბალია."
-
 
 # ---------- მონაცემების მომზადება ----------
 
@@ -60,23 +59,14 @@ def _get(obj, *names, default=""):
     return default
 
 
-def _explain(title, description):
+def _explain(title, description, port=None):
+    if port in PORT_EXPLANATIONS:
+        return PORT_EXPLANATIONS[port]
     text = f"{title} {description}".lower()
     for keyword, explanation in EXPLANATIONS.items():
         if keyword.lower() in text:
             return explanation
     return ""
-
-
-def _adjust_severity(severity, category, text):
-    """ასწორებს სიმძიმეს რეალური რისკის მიხედვით. აბრუნებს (სიმძიმე, შენიშვნა)."""
-    lowered = text.lower()
-    is_local = "127.0.0.1" in lowered or "localhost" in lowered
-    if is_local and "network" in category.lower():
-        return "Low", LOCAL_NOTE
-    if "file" in category.lower() and severity == "High":
-        return "Medium", ""
-    return severity, ""
 
 
 def _prepare(finding):
@@ -88,14 +78,14 @@ def _prepare(finding):
     description = str(_get(finding, "description", "details"))
     evidence = str(_get(finding, "evidence"))
 
-    severity, note = _adjust_severity(severity, category, f"{title} {description} {evidence}")
+    note = str(_get(finding, "note"))  # რისკს ახლა RiskAssessor ასწორებს, აქ მხოლოდ ვაჩვენებთ
 
     return {
         "severity": severity,
         "category": category,
         "title": title,
         "description": description,
-        "explanation": _explain(title, description),
+        "explanation": _explain(title, description, _get(finding, "port", default=None)),
         "note": note,
         "recommendation": str(_get(finding, "recommendation", "fix", "advice")),
         "evidence": evidence,
@@ -345,7 +335,7 @@ def generate_html_report(assessor):
 
   <div class="main"><div class="inner">
     <div class="top" id="overview">
-      <h1>Overview</h1>
+      <h1>მიმოხილვა</h1>
       <div class="meta">{company} &middot; {date}</div>
     </div>
 
@@ -380,8 +370,10 @@ def generate_html_report(assessor):
 </body>
 </html>"""
 
-    os.makedirs(REPORTS_DIR, exist_ok=True)
-    path = os.path.join(REPORTS_DIR, f"audit_report_{time.strftime('%Y%m%d_%H%M%S')}.html")
+    # config.REPORTS_DIR აბსოლუტური ბილიკია, ამიტომ ანგარიში იქ ინახება, სადაც პროექტია
+    # (და არა იქ, საიდანაც პროგრამა გაუშვეს)
+    os.makedirs(config.REPORTS_DIR, exist_ok=True)
+    path = os.path.join(config.REPORTS_DIR, f"audit_report_{time.strftime('%Y%m%d_%H%M%S')}.html")
     with open(path, "w", encoding="utf-8") as file:
         file.write(html)
     return path

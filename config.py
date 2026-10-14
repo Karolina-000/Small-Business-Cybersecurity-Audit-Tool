@@ -17,7 +17,6 @@ AUDIT_DATE = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 REPORTS_DIR = os.path.join(BASE_DIR, "reports")
-LOGS_DIR = os.path.join(BASE_DIR, "logs")
 
 # ---------------------------------------------------------------
 # ქსელის სკანირების პარამეტრები (Nmap)
@@ -50,6 +49,7 @@ MEDIUM_RISK_PORTS = {
 # ---------------------------------------------------------------
 FAILED_LOGIN_THRESHOLD = 5      # რამდენი წარუმატებელი მცდელობა ჩაითვალოს რისკად
 FAILED_LOGIN_WINDOW_MIN = 15    # რა დროში (წუთებში)
+LOG_LOOKBACK_DAYS = 30          # რამდენი დღის წინანდელი ლოგები გაანალიზდეს
 WINDOWS_EVENT_IDS = {
     4625: "წარუმატებელი შესვლის მცდელობა",
     4720: "ახალი მომხმარებლის ანგარიში შეიქმნა",
@@ -61,9 +61,14 @@ WINDOWS_EVENT_IDS = {
 # ფაილების მთლიანობის (SHA-256) პარამეტრები
 # ---------------------------------------------------------------
 FILE_INTEGRITY_TARGETS = [
+    # ფარდობითი ბილიკი პროექტის საქაღალდიდან ითვლება (არა იქიდან, სადაც პროგრამას უშვებთ)
     "./test_file.txt"
 ]
 BASELINE_HASH_FILE = os.path.join(BASE_DIR, "baseline_hashes.json")
+# Baseline-ის დასაცავად (HMAC ხელმოწერა) დააყენეთ ამ სახელით გარემოს ცვლადი, მაგ. Windows-ზე:
+#   setx AUDIT_BASELINE_KEY "ჩემი-გრძელი-საიდუმლო-ფრაზა"
+# გასაღები არ უნდა ინახებოდეს baseline-თან ან კოდში.
+BASELINE_KEY_ENV = "AUDIT_BASELINE_KEY"
 
 # ---------------------------------------------------------------
 # ვებსაიტის საბაზისო შემოწმების პარამეტრები
@@ -79,8 +84,3 @@ REQUIRED_SECURITY_HEADERS = [
     "X-Frame-Options",
 ]
 SSL_EXPIRY_WARNING_DAYS = 30
-
-# ---------------------------------------------------------------
-# რისკის დონეები
-# ---------------------------------------------------------------
-RISK_LEVELS = ["Low", "Medium", "High"]

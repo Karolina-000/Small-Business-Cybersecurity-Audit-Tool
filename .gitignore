@@ -6,3 +6,4 @@ baseline_hashes.json
 test_file.txt
 .vscode/
 .venv/
+audit.log

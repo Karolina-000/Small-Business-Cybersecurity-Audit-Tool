@@ -8,9 +8,9 @@ Windows Security Event Log-ის ანალიზი pywin32-ის მეშ
   - pip install pywin32
   - გაშვება ადმინისტრატორის უფლებებით (Security ლოგზე წვდომისთვის)
 
-თუ სკრიპტი გაშვებულია არა-Windows სისტემაზე (მაგ. ტესტირებისთვის Linux/Mac-ზე),
-მოდული ავტომატურად გადადის "დემო რეჟიმზე" და აჩვენებს სავარჯიშო მონაცემებს,
-რომ დანარჩენი პროგრამის ტესტირება შესაძლებელი იყოს.
+არა-Windows სისტემაზე მოდული გამოტოვებულია (შეცდომის შეტყობინებით).
+სადემონსტრაციო (ყალბი) მონაცემები მხოლოდ მაშინ ბრუნდება, როცა პირდაპირ
+მოთხოვნილია ალამით: python main.py --demo
 """
 
 import platform
@@ -29,21 +29,38 @@ if IS_WINDOWS:
 
 
 class WindowsLogAnalyzer:
-    def __init__(self, server="localhost", log_type="Security"):
+    def __init__(self, server="localhost", log_type="Security", demo=False):
         self.server = server
         self.log_type = log_type
+        self.demo = demo  # True მხოლოდ --demo ალმით: აბრუნებს სადემონსტრაციო (ყალბ) მონაცემებს
 
     def analyze(self) -> list[Finding]:
-        if not IS_WINDOWS:
+        # დემო მონაცემები მხოლოდ მაშინ, როცა მომხმარებელმა პირდაპირ მოითხოვა.
+        # ადრე არა-Windows სისტემაზე ყალბი brute-force რეალურ ანგარიშში ხვდებოდა.
+        if self.demo:
             return self._demo_mode()
+        if not IS_WINDOWS:
+            raise RuntimeError(
+                "Windows Event Log მხოლოდ Windows-ზეა ხელმისაწვდომი. "
+                "მოდული გამოტოვებულია (სადემონსტრაციოდ გამოიყენეთ --demo)."
+            )
 
         findings: list[Finding] = []
-        events = self._read_events()
+        # მხოლოდ ბოლო N დღის მოვლენები (წინააღმდეგ შემთხვევაში წლების წინანდელი
+        # მოვლენაც "ახალ" Finding-ად ჩაითვლებოდა)
+        cutoff = datetime.now() - timedelta(days=config.LOG_LOOKBACK_DAYS)
+        events = [ev for ev in self._read_events() if self._event_time(ev) >= cutoff]
 
         findings.extend(self._check_failed_logins(events))
         findings.extend(self._check_specific_event_ids(events))
 
         return findings
+
+    @staticmethod
+    def _event_time(ev) -> datetime:
+        """აქცევს ლოგის დროს ჩვეულებრივ datetime-ად (სხვადასხვა pywin32 ვერსიაში ტიპი განსხვავდება)."""
+        t = ev.TimeGenerated
+        return datetime(t.year, t.month, t.day, t.hour, t.minute, t.second)
 
     # -----------------------------------------------------------
     # რეალური Windows წაკითხვა
@@ -107,7 +124,9 @@ class WindowsLogAnalyzer:
         findings = []
         for ev in events:
             event_id = ev.EventID & 0xFFFF
-            if event_id not in config.WINDOWS_EVENT_IDS:
+            # 4625-ს (წარუმატებელი შესვლა) ცალკე Finding აღარ ვუკეთებთ: ის ერთიანად
+            # მუშავდება _check_failed_logins-ში, თორემ 200 მცდელობა = 200 Finding იქნებოდა
+            if event_id == 4625 or event_id not in config.WINDOWS_EVENT_IDS:
                 continue
 
             description = config.WINDOWS_EVENT_IDS[event_id]

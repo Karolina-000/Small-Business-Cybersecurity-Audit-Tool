@@ -13,7 +13,9 @@ website_checker.py
 
 import socket
 import ssl
-from datetime import datetime
+import time
+from datetime import datetime, timezone
+from urllib.parse import urlparse
 
 import requests
 
@@ -98,35 +100,52 @@ class WebsiteChecker:
     # -----------------------------------------------------------
     def _check_ssl_expiry(self, url: str) -> list[Finding]:
         findings = []
-        if not url.startswith("https://"):
-            return findings
 
-        hostname = url.replace("https://", "").split("/")[0]
+        # urlparse სწორად ამუშავებს პორტიან მისამართებსაც (მაგ. https://example.ge:8443)
+        parsed = urlparse(url)
+        if parsed.scheme != "https" or not parsed.hostname:
+            return findings
+        hostname = parsed.hostname
+        port = parsed.port or 443
+
         try:
             ctx = ssl.create_default_context()
-            with socket.create_connection((hostname, 443), timeout=self.timeout) as sock:
+            with socket.create_connection((hostname, port), timeout=self.timeout) as sock:
                 with ctx.wrap_socket(sock, server_hostname=hostname) as ssock:
                     cert = ssock.getpeercert()
 
-            expire_date = datetime.strptime(cert["notAfter"], "%b %d %H:%M:%S %Y %Z")
-            days_left = (expire_date - datetime.now()).days
+            # cert_time_to_seconds სწორად კითხულობს GMT დროს (datetime.now() ადგილობრივ დროს იყენებდა)
+            expire_ts = ssl.cert_time_to_seconds(cert["notAfter"])
+            days_left = int((expire_ts - time.time()) // 86400)
+            expire_date = datetime.fromtimestamp(expire_ts, tz=timezone.utc).date()
 
-            if days_left < 0:
-                findings.append(Finding(
-                    category="Website",
-                    title=f"SSL სერტიფიკატის ვადა გასულია: {hostname}",
-                    description=f"სერტიფიკატი ამოიწურა {expire_date.date()}-ს.",
-                    risk_level="High",
-                    recommendation="დაუყოვნებლივ განაახლეთ SSL სერტიფიკატი.",
-                ))
-            elif days_left <= config.SSL_EXPIRY_WARNING_DAYS:
+            if days_left <= config.SSL_EXPIRY_WARNING_DAYS:
                 findings.append(Finding(
                     category="Website",
                     title=f"SSL სერტიფიკატის ვადა მალე იწურება: {hostname}",
-                    description=f"დარჩენილია {days_left} დღე (ამოწურვა: {expire_date.date()}).",
+                    description=f"დარჩენილია {days_left} დღე (ამოწურვა: {expire_date}).",
                     risk_level="Medium",
                     recommendation="დაგეგმეთ სერტიფიკატის განახლება ვადის ამოწურვამდე.",
                 ))
+
+        except ssl.SSLCertVerificationError as e:
+            # ვადაგასული ან არასანდო სერტიფიკატი ვერიფიკაციისას ვარდება getpeercert()-მდე.
+            # ამიტომ ეს ცალკე ვიჭერთ და High-ად ვაფიქსირებთ (ზოგადი except მას Low-ად აქცევდა).
+            # verify_code 10 = ვადა გასულია
+            if e.verify_code == 10:
+                title = f"SSL სერტიფიკატის ვადა გასულია: {hostname}"
+                recommendation = "დაუყოვნებლივ განაახლეთ SSL სერტიფიკატი."
+            else:
+                title = f"SSL სერტიფიკატი არასწორია ან არასანდოა: {hostname}"
+                recommendation = "შეამოწმეთ სერტიფიკატი: სანდო გამცემი, სახელის დამთხვევა, სრული ჯაჭვი."
+            findings.append(Finding(
+                category="Website",
+                title=title,
+                description=f"ვერიფიკაციის შეცდომა: {e.verify_message}",
+                risk_level="High",
+                recommendation=recommendation,
+                evidence=f"host={hostname}:{port}, verify_code={e.verify_code}",
+            ))
         except Exception as e:
             findings.append(Finding(
                 category="Website",

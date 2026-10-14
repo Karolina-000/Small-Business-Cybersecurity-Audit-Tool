@@ -89,4 +89,5 @@ class NetworkScanner:
             risk_level=risk,
             recommendation=recommendation,
             evidence=f"host={host}, port={port}/{proto}, service={service_str}",
+            port=port,
         )
